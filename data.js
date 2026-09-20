@@ -12,6 +12,12 @@ export const conditionOptions = [
   ['Bipolar Disorder','ϟ',''],['PTSD','◇',''],["I'm not sure",'?',''],['Other','•••','']
 ];
 export const insurers = ['Aetna','Blue Cross Blue Shield','Cigna','United Healthcare','Oscar Health','Other Insurance','No Insurance'];
+// Patient feedback transcribed from the supplied onboarding screenshots.
+export const patientFeedback = [
+  {title:'Care that feels easier',quote:"This has been the easiest healthcare I've ever had and I've had therapists for 20+ years."},
+  {title:'A provider who listens',quote:"My provider has been a godsend and changed my life for the better. She really listened to me and is consistently trying to understand more what’s going on and tries to help me through it."},
+  {title:'Feeling heard, finding options',quote:"This is the first time where I feel like I was taken seriously by my provider and listened to. I was offered alternatives based on what can be done in my price range and cash pay services. I feel at ease here and I'm truly grateful."}
+];
 export const providers = [
   {id:'ifeoma',name:'Ifeoma Ochei',photo:'ifeoma',rating:'5.0',reviews:41,specialties:['Depression','Anxiety','Trauma','Mood Disorders','PTSD','ADHD'],insurance:['Aetna','Blue Cross Blue Shield','United Healthcare'],slots:[{id:'i1',date:'Wed, Sep 23',time:'8:00 AM',iso:'2026-09-23T08:00:00'},{id:'i2',date:'Wed, Sep 30',time:'12:00 PM',iso:'2026-09-30T12:00:00'}],bio:'I am a psychiatric nurse practitioner and former family nurse practitioner who now focuses on adult mental health, especially depression, anxiety, PTSD, trauma, ADHD, and mood changes.',needs:['existing','new','unsure']},
   {id:'cyndi',name:'Cyndi Truong',photo:'cyndi',rating:'4.8',reviews:37,specialties:['Anxiety','Bipolar Disorder','Depression','Medication Management','Mood Disorders','PTSD','ADHD'],insurance:['Aetna','Blue Cross Blue Shield','Cigna','Oscar Health'],slots:[{id:'c1',date:'Fri, Sep 25',time:'11:00 AM',iso:'2026-09-25T11:00:00'},{id:'c2',date:'Fri, Sep 25',time:'11:30 AM',iso:'2026-09-25T11:30:00'},{id:'c3',date:'Fri, Oct 2',time:'6:00 AM',iso:'2026-10-02T06:00:00'}],bio:"My approach to care is grounded in honest, nonjudgmental communication—because I know how vulnerable it can feel to talk about what's going on beneath the surface.",needs:['existing','new','unsure']},

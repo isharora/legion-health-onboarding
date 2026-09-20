@@ -1,4 +1,4 @@
-import { fitQuestions, conditionOptions, insurers, providers, getMatches, validSelection, canSelectAppointment } from './data.js';
+import { fitQuestions, conditionOptions, insurers, providers, getMatches, validSelection, canSelectAppointment, patientFeedback } from './data.js';
 
 const initial = () => ({phase:'fit',fit:0,answers:[],texas:true,eligible:true,conditions:[],insurance:'',needs:'',providerId:'',slotId:'',patient:{first:'Ishita',last:'Testing',email:'ish.g.arora@gmail.com',phone:'(408) 440-6539',dob:'1992-12-21',referral:'Google, Bing, or other search engine'},checks:{terms:true,treatment:true,recording:true},tasks:{},booked:false});
 let state = initial();
@@ -31,38 +31,46 @@ function portrait(p) {
 }
 
 function renderProviders() {
+  const socialProof=['patient','payment'].includes(state.phase);
+  pane.classList.toggle('social-proof',socialProof);
+  document.getElementById('provider-pane').setAttribute('aria-label',socialProof?'Patient experiences':'Providers and availability');
+  if(socialProof){renderSocialProof();return;}
   const matches=getMatches(state), selected=selectedProvider(), booked=state.booked;
   const choosing=canSelectAppointment(state);
   const preview=!choosing&&!booked;
   const show=booked&&selected?[selected]:matches;
   pane.classList.toggle('care-preview',preview);
-  const stages=[
-    ['Texas',providers.length,true],
-    ['Concerns',getMatches({conditions:state.conditions}).length,state.conditions.length>0],
-    ['Insurance',getMatches({conditions:state.conditions,insurance:state.insurance}).length,Boolean(state.insurance)],
-    ['Care needs',matches.length,Boolean(state.needs)]
-  ];
   const context=!state.eligible?'Your answers suggest a different type of care may be a better fit.':
     booked?'Your selected provider and appointment details.':
     choosing?'We’ve recommended a provider and appointment. Choose any provider or time that works for you.':
-    state.needs?'Your care preferences have narrowed your options. Continue to choose your appointment.':
-    state.insurance?'Providers who accept your insurance are shown below. Tell us what kind of help you need next.':
-    state.conditions.length?'These providers support your concerns. Your insurance will help narrow the list further.':
-    'See your care options take shape as you answer a few questions.';
+    'Virtual care, with appointments to fit your schedule.';
   pane.innerHTML=`${state.phase==='match'?progress()+backButton():'<button class="text-button mobile-close" data-action="return-flow">↑ Back to your questions</button>'}
-    <div class="eyebrow">${booked?'Your upcoming care':choosing?'Your recommended care':'Your care, coming into focus'}</div>
-    <div class="pane-heading"><h2 tabindex="-1">${booked?'Your appointment':choosing?'Choose your provider and time':'Find your fit'}</h2><span class="count">${show.length} of ${providers.length}</span></div>
+    <div class="eyebrow">${booked?'Your upcoming care':choosing?'Your recommended care':'Care is within reach'}</div>
+    <div class="pane-heading"><h2 tabindex="-1">${booked?'Your appointment':choosing?'Choose your provider and time':'Providers ready to help'}</h2><span class="count">${show.length} ${show.length===1?'provider':'providers'}</span></div>
     <p class="pane-description">${context}</p>
-    ${preview&&state.eligible?`<div class="care-funnel" aria-label="Provider filtering">${stages.map(([label,count,active])=>`<div class="funnel-stage ${active?'complete':''}"><strong>${active?count:'—'}</strong><span>${label}</span></div>`).join('')}</div>
-      <div class="preview-lock"><span aria-hidden="true">⌑</span><span>Choose a provider and time after these questions.</span></div>`:''}
-    <div class="match-context"><span class="context-chip">⌖ Texas</span>${state.conditions.map(c=>`<span class="context-chip">${esc(c)}</span>`).join('')}${state.insurance?`<span class="context-chip ok">${esc(state.insurance==='No Insurance'?'Cash pay':state.insurance)}</span>`:''}</div>
-    <p class="filter-status" role="status">${show.length} ${show.length===1?'provider matches':'providers match'}${state.conditions.length||state.insurance||state.needs?' your answers':' in Texas'}${preview&&state.eligible&&show.length<providers.length?` · ${providers.length-show.length} filtered out`:''}</p>
+    ${!preview?`<div class="match-context"><span class="context-chip">⌖ Texas</span>${state.conditions.map(c=>`<span class="context-chip">${esc(c)}</span>`).join('')}${state.insurance?`<span class="context-chip ok">${esc(state.insurance==='No Insurance'?'Cash pay':state.insurance)}</span>`:''}</div>`:''}
+    <p class="sr-only" role="status">${show.length} ${show.length===1?'provider available':'providers available'}</p>
     <div class="provider-grid ${preview?'preview-grid':''}">
       ${show.length?show.map((p,i)=>preview?previewCard(p):providerCard(p,i,booked)).join(''):`<div class="empty-state"><h3>${state.eligible?'No matching providers available':'Let’s find the right care for you'}</h3><p>${state.eligible?'Try another insurance option or review your selected concerns.':'Provider booking is paused based on your fit-check answers.'}</p>${state.eligible?'<button class="secondary" data-action="edit-insurance">Review insurance</button>':''}</div>`}
     </div>
     ${state.phase==='match'&&choosing&&selected?`<div class="selection-confirm"><div><strong>Your selected appointment</strong><p>${esc(selected.name)} · ${esc(selectedSlot()?.date)} at ${esc(selectedSlot()?.time)} CT</p></div><button class="primary" data-action="continue">Confirm selection &amp; continue</button></div>`:''}
     <p class="right-footer">Join thousands of patients who trust Legion Health</p>`;
-  document.getElementById('mobile-preview').innerHTML=`<button class="mobile-preview" data-action="view-providers"><span>${booked?'View your appointment':`${matches.length} providers match`}<small>${preview?'Your options narrow as you answer':'See specialties and upcoming appointments'}</small></span><span aria-hidden="true">↓</span></button>`;
+  document.getElementById('mobile-preview').innerHTML=`<button class="mobile-preview" data-action="view-providers"><span>${booked?'View your appointment':`${matches.length} providers available`}<small>${preview?'See providers and upcoming availability':'See specialties and upcoming appointments'}</small></span><span aria-hidden="true">↓</span></button>`;
+}
+
+function renderSocialProof() {
+  pane.classList.remove('care-preview');
+  pane.innerHTML=`<button class="text-button mobile-close" data-action="return-flow">↑ Back to ${state.phase==='patient'?'your details':'booking'}</button>
+    <div class="eyebrow">Patient experiences</div>
+    <div class="pane-heading"><h2>Care that makes a difference</h2></div>
+    <p class="pane-description">Hear from people who have found support with Legion Health.</p>
+    <div class="feedback-cards">${patientFeedback.map(({title,quote})=>`<figure class="feedback-card">
+      <div class="feedback-heading"><span class="feedback-mark" aria-hidden="true">“</span><h3>${esc(title)}</h3></div>
+      <blockquote><p>${esc(quote)}</p></blockquote>
+      <figcaption><span class="feedback-avatar" aria-hidden="true">♡</span>Legion Health Patient</figcaption>
+    </figure>`).join('')}</div>
+    <p class="right-footer">Join thousands of patients who trust Legion Health</p>`;
+  document.getElementById('mobile-preview').innerHTML='';
 }
 
 function previewCard(p) {
