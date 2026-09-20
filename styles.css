@@ -5,3 +5,20 @@
 @media(max-width:1100px){.journey{padding:25px 25px 40px}.provider-pane{padding:28px 23px}.site-header{padding:0 25px}.question-card,.form-card{padding:22px}.intro h1{font-size:27px}.intro p{font-size:15px}.condition-copy{font-size:13px}.provider-role{font-size:11px}.step-labels{font-size:9px}}
 @media(max-width:800px){.site-header{height:71px;padding:0 20px;gap:12px}.brand{font-size:30px}.brand-mark{font-size:44px}.brand small{font-size:8px;margin-top:5px}.prototype-label{font-size:10px;max-width:115px;text-align:right}.site-header>.text-button{font-size:12px}.shell{display:block;min-height:calc(100vh - 71px)}.journey{padding:20px 20px 36px}.provider-pane{border-left:0;border-top:1px solid #d9e0e9;padding:28px 20px;scroll-margin-top:15px}.provider-pane>div{position:static;max-width:660px}.mobile-preview{display:flex;align-items:center;justify-content:space-between;width:100%;gap:15px;padding:13px 15px;border:1px solid #dbe3ef;background:#edf2f8;border-radius:9px;text-align:left;margin-bottom:20px}.mobile-preview span{font-size:13px;font-weight:550}.mobile-preview small{font-size:11px;color:#69788b;display:block;margin-top:4px;font-weight:400}.location{margin-bottom:25px}.intro h1{font-size:27px}.intro p{font-size:15px}.provider-pane .mobile-close{display:block;margin-bottom:15px}.step-labels{font-size:10px}.confidential{margin-top:24px}.pane-description{min-height:0}.provider-role{font-size:12px}.portrait{width:57px}.provider-card{padding:20px}.question-card h2{font-size:20px}.condition-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:390px){.journey{padding:17px 15px 30px}.site-header{padding:0 15px}.prototype-label{display:none}.site-header>.text-button{margin-left:auto}.location{flex-wrap:wrap}.question-card,.form-card{padding:19px}.safety{padding:18px}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.condition.expanded{gap:12px}.condition-name{min-width:76px}.condition-copy{padding-left:12px;font-size:12px}.step-labels{font-size:9px;gap:4px}.inline-actions{flex-direction:column}}
+
+/* The match step is the decision surface: give the provider list the full canvas. */
+.provider-fullscreen .shell{display:block;min-height:calc(100vh - 84px)}
+.provider-fullscreen .journey{display:none}
+.provider-fullscreen .provider-pane{min-height:calc(100vh - 84px);border-left:0;padding:42px clamp(24px,7vw,120px) 58px}
+.provider-fullscreen .provider-pane>div{max-width:1120px;position:static}
+.provider-fullscreen .pane-heading h2{font-size:31px}
+.provider-fullscreen .pane-description{max-width:720px;font-size:16px}
+.provider-fullscreen .provider-card{display:inline-block;vertical-align:top;width:calc(50% - 9px);margin-right:14px;padding:23px;min-height:285px}
+.provider-fullscreen .provider-card:nth-of-type(2n){margin-right:0}
+.provider-fullscreen .provider-card.selected{padding:22px}
+.provider-fullscreen .selection-confirm{display:flex;align-items:center;justify-content:space-between;gap:24px;background:#f1f6ff;border:1px solid #d4e2ff;border-radius:11px;padding:19px 22px;margin:3px 0 15px}
+.provider-fullscreen .selection-confirm strong{display:block;font-size:16px}
+.provider-fullscreen .selection-confirm p{font-size:14px;color:#53637a;margin-top:5px}
+.provider-fullscreen .selection-confirm .primary{width:auto;white-space:nowrap}
+.provider-select{width:100%;margin-top:10px;padding:9px 11px;font-size:13px}
+@media(max-width:800px){.provider-fullscreen .shell{min-height:calc(100vh - 71px)}.provider-fullscreen .provider-pane{min-height:calc(100vh - 71px);padding:27px 20px 40px}.provider-fullscreen .provider-card{display:block;width:100%;margin-right:0;min-height:0}.provider-fullscreen .selection-confirm{display:block}.provider-fullscreen .selection-confirm .primary{width:100%;margin-top:14px}.provider-fullscreen .pane-heading h2{font-size:25px}}
