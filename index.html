@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="An interactive Legion Health onboarding prototype with live provider matching." />
+  <title>Legion Health · Find your care</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="./" aria-label="Legion Health home"><span class="brand-mark">♡</span><span>legion<small>HEALTH</small></span></a><button id="restart" class="text-button">Start over</button></header>
+  <main class="shell"><section class="journey" aria-label="Onboarding"><div id="mobile-preview"></div><div id="flow"></div></section><aside class="provider-pane" id="provider-pane" aria-label="Providers and availability"><div id="providers"></div></aside></main>
+  <dialog id="info-dialog"><div class="dialog-content"><button class="dialog-close" aria-label="Close dialog">×</button><h2 id="dialog-title"></h2><div id="dialog-body"></div></div></dialog>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
