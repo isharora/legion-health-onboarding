@@ -1,4 +1,4 @@
-import { fitQuestions, conditionOptions, insurers, providers, getMatches, validSelection } from './data.js';
+import { fitQuestions, conditionOptions, insurers, providers, getMatches, validSelection, canSelectAppointment } from './data.js';
 
 const initial = () => ({phase:'fit',fit:0,answers:[],texas:true,eligible:true,conditions:[],insurance:'',needs:'',providerId:'',slotId:'',patient:{first:'Ishita',last:'Testing',email:'ish.g.arora@gmail.com',phone:'(408) 440-6539',dob:'1992-12-21',referral:'Google, Bing, or other search engine'},checks:{terms:true,treatment:true,recording:true},tasks:{},booked:false});
 let state = initial();
@@ -16,41 +16,76 @@ const selectedSlot = () => selectedProvider()?.slots.find(s=>s.id===state.slotId
 function openDialog(title,body) { document.getElementById('dialog-title').textContent=title; document.getElementById('dialog-body').innerHTML=body; dialog.showModal(); }
 function progress(index) { return `<div class="journey-progress"><div class="progress-top"><span>Step ${index+1} of 6 &nbsp; <span>${Math.round((index+1)/6*100)}% Complete</span></span><button data-action="help">♧ &nbsp; Need help? Call us</button></div><div class="progress-track" role="progressbar" aria-label="Booking progress" aria-valuenow="${Math.round((index+1)/6*100)}" aria-valuemin="0" aria-valuemax="100"><div class="progress-fill" style="width:${(index+1)/6*100}%"></div></div><div class="step-labels">${steps.map((s,i)=>`<span class="${i===index?'current':''}">${s}</span>`).join('')}</div></div>`; }
 function locationBanner() {return `<div class="location"><span aria-hidden="true">⌖</span><div class="location-text"><strong>We've detected you're in Texas</strong></div><button data-action="location">Not in Texas? Click here</button></div>`;}
-function go(phase) { state.phase=phase; render(); window.scrollTo({top:0,behavior:'instant'}); flow.querySelector('h1,h2')?.focus({preventScroll:true}); }
+function go(phase) { state.phase=phase; render(); window.scrollTo({top:0,behavior:'instant'}); (phase==='match'?pane:flow).querySelector('h1,h2')?.focus({preventScroll:true}); }
 function backButton() {return `<button class="back" data-action="back">← &nbsp; Go back</button>`;}
 function heading(title,body) {return `<div class="form-heading"><h1 tabindex="-1">${title}</h1><p>${body}</p></div>`;}
 function selectRecommendation() { const recommendation=getMatches(state)[0]; if(recommendation){ state.providerId=recommendation.id; state.slotId=recommendation.slots[0].id; } }
 
+function portrait(p) {
+  return p.avatar ? `<img class="portrait" src="${p.avatar}" alt="${esc(p.name)}">` : `<div class="portrait ${p.photo}" role="img" aria-label="${esc(p.name)}"></div>`;
+}
+
 function renderProviders() {
-  const matches = getMatches(state);
-  const fitDone=state.answers.filter(a=>a!==undefined).length;
-  const selected=selectedProvider();
-  const booked=state.booked;
+  const matches=getMatches(state), selected=selectedProvider(), booked=state.booked;
+  const choosing=canSelectAppointment(state);
+  const preview=!choosing&&!booked;
   const show=booked&&selected?[selected]:matches;
-  let context = !state.eligible ? 'Your answers suggest a different type of care may be a better fit.' : state.phase==='fit' ? `Preview available care while we check fit. ${fitDone} of 5 questions completed.` : state.insurance==='Other Insurance' ? 'We could not confirm a match for this insurance in our demo provider list.' : state.insurance ? `Updated for ${state.insurance==='No Insurance'?'cash-pay appointments':state.insurance}. Your coverage still needs verification.` : state.conditions.length ? 'Updated for your selected concerns. Choose your insurance to refine these matches.' : 'As you share your needs, your available care options will update here.';
-  if (state.needs && state.eligible && matches.length) context = state.needs==='existing' ? 'Providers with medication management experience appear first. Availability is shown below.' : state.needs==='new' ? 'These providers offer evaluation and treatment planning. Choose a time that works for you.' : "You don't need to have everything figured out. These providers can help you take the next step.";
-  pane.innerHTML=`<button class="text-button mobile-close" data-action="return-flow">↑ Back to your questions</button><div class="eyebrow">${booked?'Your upcoming care':state.phase==='match'?'Your recommended care':'Care is within reach'}</div><div class="pane-heading"><h2>${booked?'Your appointment':state.phase==='match'?'Choose your provider and time':'Your available providers'}</h2><span class="count">${show.length} ${show.length===1?'provider':'providers'}</span></div><p class="pane-description">${booked?'Your appointment and provider details are saved for this demo session.':state.phase==='match'?'We recommend the first option based on your answers and earliest availability. You can choose any provider or time below.':context}</p><div class="match-context">${state.texas?'<span class="context-chip">⌖ Texas</span>':''}${state.answers[4]===true?'<span class="context-chip ok">✓ Virtual care</span>':''}${state.answers[3]===true?'<span class="context-chip ok">✓ Adults 18+</span>':''}${state.conditions.map(c=>`<span class="context-chip">${esc(c)}</span>`).join('')}${state.insurance?`<span class="context-chip ok">${esc(state.insurance==='No Insurance'?'Cash pay':state.insurance)}</span>`:''}</div><div aria-live="polite" class="sr-only">${show.length} matching providers. ${esc(context)}</div>
-    ${show.length?show.map((p,i)=>providerCard(p,i,booked)).join(''):`<div class="empty-state"><h3>${state.eligible?'No matching providers available':'Let’s find the right care for you'}</h3><p>${state.eligible?'Try another insurance option or review your selected concerns.':'Provider booking is paused based on your fit-check answers.'}</p>${state.eligible?'<button class="secondary" data-action="edit-insurance">Review insurance</button>':''}</div>`}
-    ${state.phase==='match'&&!booked&&selected?`<div class="selection-confirm"><div><strong>Recommended selection</strong><p>${esc(selected.name)} · ${esc(selectedSlot()?.date)} at ${esc(selectedSlot()?.time)} CT</p></div><button class="primary" data-action="continue">Confirm selection &amp; continue</button></div>`:''}
-    <p class="demo-note"><span aria-hidden="true">ⓘ</span><span>Portraits and profile excerpts are from the supplied reference screens. No appointment is booked or insurance verified.</span></p><p class="right-footer">Join thousands of patients who trust Legion Health</p>`;
-  document.getElementById('mobile-preview').innerHTML=`<button class="mobile-preview" data-action="view-providers"><span>${booked?'View your appointment':`${matches.length} providers ${state.insurance?'match your coverage':'available'}`}<small>${matches.length?'See specialties and upcoming appointments':'Review your care options'}</small></span><span aria-hidden="true">↓</span></button>`;
+  pane.classList.toggle('care-preview',preview);
+  const stages=[
+    ['Texas',providers.length,true],
+    ['Concerns',getMatches({conditions:state.conditions}).length,state.conditions.length>0],
+    ['Insurance',getMatches({conditions:state.conditions,insurance:state.insurance}).length,Boolean(state.insurance)],
+    ['Care needs',matches.length,Boolean(state.needs)]
+  ];
+  const context=!state.eligible?'Your answers suggest a different type of care may be a better fit.':
+    booked?'Your selected provider and appointment details.':
+    choosing?'We’ve recommended a provider and appointment. Choose any provider or time that works for you.':
+    state.needs?'Your care preferences have narrowed your options. Continue to choose your appointment.':
+    state.insurance?'Providers who accept your insurance are shown below. Tell us what kind of help you need next.':
+    state.conditions.length?'These providers support your concerns. Your insurance will help narrow the list further.':
+    'See your care options take shape as you answer a few questions.';
+  pane.innerHTML=`${state.phase==='match'?backButton():'<button class="text-button mobile-close" data-action="return-flow">↑ Back to your questions</button>'}
+    <div class="eyebrow">${booked?'Your upcoming care':choosing?'Your recommended care':'Your care, coming into focus'}</div>
+    <div class="pane-heading"><h2 tabindex="-1">${booked?'Your appointment':choosing?'Choose your provider and time':'Find your fit'}</h2><span class="count">${show.length} of ${providers.length}</span></div>
+    <p class="pane-description">${context}</p>
+    ${preview&&state.eligible?`<div class="care-funnel" aria-label="Provider filtering">${stages.map(([label,count,active])=>`<div class="funnel-stage ${active?'complete':''}"><strong>${active?count:'—'}</strong><span>${label}</span></div>`).join('')}</div>
+      <div class="preview-lock"><span aria-hidden="true">⌑</span><span>Choose a provider and time after these questions.</span></div>`:''}
+    <div class="match-context"><span class="context-chip">⌖ Texas</span>${state.conditions.map(c=>`<span class="context-chip">${esc(c)}</span>`).join('')}${state.insurance?`<span class="context-chip ok">${esc(state.insurance==='No Insurance'?'Cash pay':state.insurance)}</span>`:''}</div>
+    <p class="filter-status" role="status">${show.length} ${show.length===1?'provider matches':'providers match'}${state.conditions.length||state.insurance||state.needs?' your answers':' in Texas'}${preview&&state.eligible&&show.length<providers.length?` · ${providers.length-show.length} filtered out`:''}</p>
+    <div class="provider-grid ${preview?'preview-grid':''}">
+      ${show.length?show.map((p,i)=>preview?previewCard(p):providerCard(p,i,booked)).join(''):`<div class="empty-state"><h3>${state.eligible?'No matching providers available':'Let’s find the right care for you'}</h3><p>${state.eligible?'Try another insurance option or review your selected concerns.':'Provider booking is paused based on your fit-check answers.'}</p>${state.eligible?'<button class="secondary" data-action="edit-insurance">Review insurance</button>':''}</div>`}
+    </div>
+    ${state.phase==='match'&&choosing&&selected?`<div class="selection-confirm"><div><strong>Your selected appointment</strong><p>${esc(selected.name)} · ${esc(selectedSlot()?.date)} at ${esc(selectedSlot()?.time)} CT</p></div><button class="primary" data-action="continue">Confirm selection &amp; continue</button></div>`:''}
+    <p class="right-footer">Join thousands of patients who trust Legion Health</p>`;
+  document.getElementById('mobile-preview').innerHTML=`<button class="mobile-preview" data-action="view-providers"><span>${booked?'View your appointment':`${matches.length} providers match`}<small>${preview?'Your options narrow as you answer':'See specialties and upcoming appointments'}</small></span><span aria-hidden="true">↓</span></button>`;
+}
+
+function previewCard(p) {
+  const tags=[...p.specialties.filter(s=>state.conditions.includes(s)),...p.specialties.filter(s=>!state.conditions.includes(s))].slice(0,3);
+  return `<article class="provider-preview-card" data-provider="${p.id}">
+    <div class="preview-identity">${portrait(p)}<div><h3>${esc(p.name)}</h3><p>Psychiatric NP</p></div></div>
+    <div class="preview-specialties">${tags.map(s=>`<span class="${state.conditions.includes(s)?'matched':''}">${esc(s)}</span>`).join('')}</div>
+    <p class="preview-availability"><span aria-hidden="true">◷</span> ${p.slots[0].date} · ${p.slots[0].time} CT</p>
+  </article>`;
 }
 
 function providerCard(p,i,booked) {
-  const active=p.id===state.providerId;
-  const relevant=p.specialties.filter(s=>state.conditions.includes(s));
-  const others=p.specialties.filter(s=>!relevant.includes(s));
-  const tags=[...relevant,...others].slice(0,4);
-  let reason=state.insurance&&state.insurance!=='No Insurance'?`✓ ${esc(state.insurance)} accepted in demo`:'';
-  if(state.needs==='existing'&&p.specialties.includes('Medication Management')) reason+=' · Medication management';
-  else if(state.needs==='new') reason+=' · Evaluation & treatment planning';
-  else if(state.needs==='unsure') reason+=' · Support for your next step';
-  return `<article class="provider-card ${active?'selected':''}" data-provider="${p.id}"><div class="provider-top"><div class="portrait ${p.photo}" role="img" aria-label="${p.name}"></div><div><h3>${p.name}</h3><div class="provider-role">Psychiatric Mental Health Nurse Practitioner</div><div class="rating"><span class="star">★</span> ${p.rating} <span>(${p.reviews})</span> &nbsp; · Legion clinician</div></div></div><div class="specialties">${tags.map(s=>`<span class="specialty ${relevant.includes(s)?'matched':''}">${s}</span>`).join('')}${p.specialties.length>4?`<span class="specialty">+${p.specialties.length-4}</span>`:''}</div>${reason?`<div class="provider-reason">${reason.replace(/^ · /,'')}</div>`:''}<div class="availability"><span aria-hidden="true">◷</span><span>${booked?'Selected appointment':i===0?'Earliest available':'Next available'}<br><strong>${booked?selectedSlot()?.date:p.slots[0].date} · ${booked?selectedSlot()?.time:p.slots[0].time} CT</strong></span></div>${!booked?`<div class="slots">${p.slots.map(s=>`<button class="slot ${state.slotId===s.id?'active':''}" data-action="slot" data-provider="${p.id}" data-slot="${s.id}" aria-pressed="${state.slotId===s.id}" aria-label="${p.name}, ${s.date}, ${s.time} Central Time">${s.date.replace(',','')} · ${s.time}</button>`).join('')}</div>${!active?`<button class="secondary provider-select" data-action="provider" data-provider="${p.id}">Choose ${esc(p.name)}</button>`:''}`:''}${active?'<div class="selected-tag">✓ Selected appointment</div>':''}<details class="provider-details"><summary>About ${p.name.split(' ')[0]}</summary><p>${p.bio}</p><p>Areas of expertise: ${p.specialties.join(', ')}</p></details></article>`;
+  const active=p.id===state.providerId, choosing=canSelectAppointment(state);
+  const tags=[...p.specialties.filter(s=>state.conditions.includes(s)),...p.specialties.filter(s=>!state.conditions.includes(s))].slice(0,4);
+  return `<article class="provider-card ${active?'selected':''}" data-provider="${p.id}">
+    ${i===0&&!booked?'<div class="recommendation-label">Recommended for you</div>':''}
+    <div class="provider-top">${portrait(p)}<div><h3>${esc(p.name)}</h3><div class="provider-role">Psychiatric Mental Health Nurse Practitioner</div><div class="rating"><span class="star">★</span> ${p.rating} <span>(${p.reviews})</span> · Legion clinician</div></div></div>
+    <div class="specialties">${tags.map(s=>`<span class="specialty ${state.conditions.includes(s)?'matched':''}">${esc(s)}</span>`).join('')}</div>
+    ${state.insurance&&state.insurance!=='No Insurance'?`<div class="provider-reason">✓ ${esc(state.insurance)} accepted</div>`:''}
+    <div class="availability"><span aria-hidden="true">◷</span><span>${booked?'Selected appointment':'Next available'}<br><strong>${booked?selectedSlot()?.date:p.slots[0].date} · ${booked?selectedSlot()?.time:p.slots[0].time} CT</strong></span></div>
+    ${choosing?`<div class="slots">${p.slots.map(s=>`<button class="slot ${active&&state.slotId===s.id?'active':''}" data-action="slot" data-provider="${p.id}" data-slot="${s.id}" aria-pressed="${active&&state.slotId===s.id}" aria-label="${p.name}, ${s.date}, ${s.time} Central Time">${s.date.replace(',','')} · ${s.time}</button>`).join('')}</div>`:''}
+    ${active?'<div class="selected-tag">✓ Selected appointment</div>':''}
+    <details class="provider-details"><summary>About ${p.name.split(' ')[0]}</summary><p>${p.bio}</p><p>Areas of expertise: ${p.specialties.join(', ')}</p></details>
+  </article>`;
 }
-
 function render() {
   document.body.classList.toggle('provider-fullscreen', state.phase==='match');
-  if(state.phase==='match'&&!state.booked&&!validSelection(state,state.providerId,state.slotId)) selectRecommendation();
+  if(state.phase==='match'&&canSelectAppointment(state)&&!validSelection(state,state.providerId,state.slotId)) selectRecommendation();
   if(state.providerId&&!validSelection(state,state.providerId,state.slotId)){state.providerId='';state.slotId='';}
   renderProviders();
   let html='';
@@ -70,8 +105,8 @@ function render() {
   } else if(state.phase==='needs'){
     html=`${progress(2)}<div class="banner">✓ &nbsp; Your account has been created. You can continue your journey at any time by logging back in.<div class="fine-print">Reference message shown for fidelity; this demo has no account or sign-in service.</div></div><div class="form-card">${heading('How can we help you?',"Everyone's health journey is unique. We want to give you the best care we can.")}${[['existing','⚬','I already have a diagnosis and need medication support',"We'll connect you with a provider for ongoing management"],['new','♧',"I'm looking for a new diagnosis or medication",'Our providers will evaluate and create a treatment plan'],['unsure','♡',"I'm not sure, but I need help", "We'll guide you through the process step by step"]].map(([id,icon,title,body])=>`<button class="needs-option ${state.needs===id?'selected':''}" data-action="needs" data-value="${id}" aria-pressed="${state.needs===id}"><span class="needs-icon" aria-hidden="true">${icon}</span><span><strong>${title}</strong><p>${body}</p></span></button>`).join('')}<button class="primary" data-action="continue" ${state.needs?'':'disabled'}>Continue</button></div>${backButton()}`;
   } else if(state.phase==='match'){
-    const matches=getMatches(state);
-    html=`${progress(3)}<div class="form-card">${heading('Finding your perfect match',"We're analyzing your needs to find the best provider for you")}<ul class="checklist">${['Reviewing your insurance',"Checking Legion's 105+ providers",'Verifying providers who work with your insurance','Analyzing your treatment needs','Matching you with the right provider'].map(t=>`<li><span>✓</span>${t}</li>`).join('')}</ul><div class="fine-print">Matching preview uses three reference profiles and mock coverage; these checks are simulated.</div>${matches.length?'<div class="banner" style="margin-top:20px;margin-bottom:0"><h3>Perfect match found!</h3><p style="margin-top:8px">Based on your preferences, we’ve found providers that would be a great fit for you.</p></div>':'<div class="notice">No matching providers in this demo. Review your insurance or selected concerns to see other options.</div>'}</div><div style="margin-top:26px"><h2>Your Matched <span style="color:var(--blue)">Providers</span></h2><p style="font-size:15px;color:#6b7788;margin-top:12px">Based on your preferences ${state.insurance==='No Insurance'?'and cash-pay selection':`and insurance with ${esc(state.insurance)}`}, here are the providers we think would be a great match for you.</p>${state.providerId?appointmentSummary():`<p class="matching-nudge">Choose an appointment in your provider panel to continue.</p><button class="secondary" style="margin-top:15px;width:100%" data-action="view-providers">View providers &amp; availability →</button>`}<button class="primary" style="margin-top:20px" data-action="continue" ${state.providerId?'':'disabled'}>Continue</button></div>${backButton()}`;
+    // The provider pane is the full-screen chooser at this step.
+    html='';
   } else if(state.phase==='patient'){
     html=`${progress(4)}<form id="patient-form" class="form-card">${heading('Tell us about yourself','We need some basic information to create your account')}${appointmentSummary()}<div class="field-grid">${[['first','First Name','text'],['last','Last Name','text'],['email','Email','email'],['phone','Phone Number','tel'],['dob','Date of Birth','date']].map(([id,label,type])=>`<label class="field ${id==='email'?'full':''}">${label}<input name="${id}" type="${type}" value="${esc(state.patient[id])}" required ${id==='dob'?'max="2008-09-20"':''} autocomplete="off"></label>`).join('')}<label class="field full">How did you first hear about Legion Health?<select name="referral" required><option value="">Select an option</option>${['Google, Bing, or other search engine','Friend or family','Healthcare provider','Social media','Other'].map(o=>`<option ${state.patient.referral===o?'selected':''}>${o}</option>`).join('')}</select></label></div><div class="consents">${[['terms','I agree to the Legion Health <button type="button" class="policy-link" data-action="policy" data-value="Terms of Service, Privacy Policy, and HIPAA Notice">Terms of Service, Privacy Policy, and HIPAA Notice</button>'],['treatment','I agree to the Legion Health <button type="button" class="policy-link" data-action="policy" data-value="Treatment Consent Policy and Controlled Substance Policy">Treatment Consent Policy, and Controlled Substance Policy</button>'],['recording','I agree to the <button type="button" class="policy-link" data-action="policy" data-value="Recording & AI Transcription Policy">Recording &amp; AI Transcription Policy</button>']].map(([id,label])=>`<label class="check-label"><input type="checkbox" name="${id}" ${state.checks[id]?'checked':''} required><span>${label}</span></label>`).join('')}</div><button class="primary" type="submit" style="margin-top:20px">Save my info &amp; Continue</button><div style="text-align:center;margin-top:24px"><h3 style="font-size:15px">Already started your journey?</h3><p class="fine-print">If you've already entered your email and started filling out forms, sign in to continue where you left off.</p><button class="secondary" style="margin-top:12px;width:100%" type="button" data-action="signin">⇥ &nbsp; Sign in to continue</button></div></form>${backButton()}`;
   } else if(state.phase==='payment'){
@@ -102,9 +137,8 @@ document.addEventListener('click',event=>{
   if(action==='view-providers')document.getElementById('provider-pane').scrollIntoView({behavior:'smooth'});
   if(action==='return-flow')document.querySelector('.journey').scrollIntoView({behavior:'smooth'});
   if(action==='edit-insurance')go('insurance');
-  if(action==='provider'){const provider=providers.find(p=>p.id===btn.dataset.provider);if(provider){state.providerId=provider.id;state.slotId=provider.slots[0].id;render();}}
   if(action==='slot'){
-    if(!['match','patient','payment'].includes(state.phase)){openDialog('Your available appointments','<p>Complete your fit check, conditions, insurance and care needs to choose an appointment.</p><button class="primary modal-footer" data-action="dismiss">Continue onboarding</button>');return;}
+    if(!canSelectAppointment(state))return;
     if(validSelection(state,btn.dataset.provider,btn.dataset.slot)){state.providerId=btn.dataset.provider;state.slotId=btn.dataset.slot;render();}
   }
   if(action==='policy')openDialog(value,'<p>The linked policy text was not included in the supplied screenshots. This prototype preserves the original link and consent labels, but does not substitute a policy or collect legal consent.</p>');

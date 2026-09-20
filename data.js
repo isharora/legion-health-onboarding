@@ -17,10 +17,38 @@ export const providers = [
   {id:'cyndi',name:'Cyndi Truong',photo:'cyndi',rating:'4.8',reviews:37,specialties:['Anxiety','Bipolar Disorder','Depression','Medication Management','Mood Disorders','PTSD','ADHD'],insurance:['Aetna','Blue Cross Blue Shield','Cigna','Oscar Health'],slots:[{id:'c1',date:'Fri, Sep 25',time:'11:00 AM',iso:'2026-09-25T11:00:00'},{id:'c2',date:'Fri, Sep 25',time:'11:30 AM',iso:'2026-09-25T11:30:00'},{id:'c3',date:'Fri, Oct 2',time:'6:00 AM',iso:'2026-10-02T06:00:00'}],bio:"My approach to care is grounded in honest, nonjudgmental communication—because I know how vulnerable it can feel to talk about what's going on beneath the surface.",needs:['existing','new','unsure']},
   {id:'meshel',name:'Meshel Stewart',photo:'meshel',rating:'4.8',reviews:39,specialties:['Anxiety','Bipolar Disorder','Depression','Medication Management','Mood Disorders','OCD','PTSD','Trauma',"Women's Issues",'ADHD'],insurance:['Aetna','Cigna','United Healthcare'],slots:[{id:'m1',date:'Wed, Sep 23',time:'4:30 PM',iso:'2026-09-23T16:30:00'},{id:'m2',date:'Thu, Sep 24',time:'10:00 AM',iso:'2026-09-24T10:00:00'}],bio:'Meshel Stewart is a board-certified psychiatric mental health nurse practitioner who provides compassionate, patient-centered care for adults experiencing anxiety, depression, ADHD, trauma, insomnia, bipolar disorder.',needs:['existing','new','unsure']}
 ];
+// Additional profiles make narrowing the available care visible throughout onboarding.
+const additionalProfiles = [
+  ['maya','Maya Chen',['Anxiety','Depression','ADHD'],['Aetna','Blue Cross Blue Shield'],['new','unsure']],
+  ['jordan','Jordan Ellis',['Anxiety','Depression','PTSD'],['Cigna','United Healthcare'],['existing','unsure']],
+  ['sofia','Sofia Ramirez',['ADHD','Anxiety','Bipolar Disorder'],['Aetna','Oscar Health'],['existing']],
+  ['daniel','Daniel Brooks',['Depression','PTSD','Bipolar Disorder'],['Blue Cross Blue Shield','United Healthcare'],['new','unsure']],
+  ['priya','Priya Shah',['ADHD','Depression','Anxiety'],['Cigna','Oscar Health'],['new']],
+  ['olivia','Olivia Morgan',['Anxiety','PTSD'],['Aetna','Blue Cross Blue Shield','Oscar Health'],['existing','unsure']],
+  ['marcus','Marcus Reed',['Depression','Bipolar Disorder','ADHD'],['United Healthcare','Cigna'],['existing','new']],
+  ['emily','Emily Park',['Anxiety','Depression'],['Aetna','Cigna','Blue Cross Blue Shield'],['new','unsure']],
+  ['alex','Alex Rivera',['ADHD','Anxiety','PTSD'],['Aetna','United Healthcare','Oscar Health'],['existing','new']]
+];
+providers.push(...additionalProfiles.map(([id,name,specialties,insurance,needs],i)=>({
+  id,name,photo:id,avatar:`assets/provider-${id}.svg`,rating:'4.9',reviews:28+i*3,
+  specialties,insurance,needs,
+  slots:[
+    {id:`${id}-1`,date:'Thu, Sep 24',time:`${9+i%3}:00 AM`,iso:`2026-09-24T${String(9+i%3).padStart(2,'0')}:00:00`},
+    {id:`${id}-2`,date:'Fri, Sep 25',time:'2:00 PM',iso:'2026-09-25T14:00:00'}
+  ],
+  bio:`${name} offers a supportive, collaborative approach to care, with a focus on ${specialties.join(', ')}.`
+})));
+
 export function getMatches({conditions=[],insurance='',needs='',eligible=true}={}) {
   if (!eligible) return [];
   const selected = conditions.filter(c => !["I'm not sure",'Other'].includes(c));
-  return providers.filter(p => (!insurance || insurance === 'No Insurance' || p.insurance.includes(insurance)) && selected.every(c=>p.specialties.includes(c)))
+  return providers.filter(p => (!insurance || insurance === 'No Insurance' || p.insurance.includes(insurance)) && selected.every(c=>p.specialties.includes(c)) && (!needs || p.needs.includes(needs)))
     .sort((a,b)=> needs === 'existing' ? Number(b.specialties.includes('Medication Management'))-Number(a.specialties.includes('Medication Management')) || a.slots[0].iso.localeCompare(b.slots[0].iso) : a.slots[0].iso.localeCompare(b.slots[0].iso));
 }
 export function validSelection(state, providerId, slotId) { return getMatches(state).some(p=>p.id===providerId && p.slots.some(s=>s.id===slotId)); }
+
+export function canSelectAppointment(state) {
+  return ['match','patient','payment'].includes(state.phase) && !state.booked && state.texas && state.eligible &&
+    fitQuestions.every((q,i)=>state.answers?.[i]===q.eligible) &&
+    state.conditions.length>0 && Boolean(state.insurance) && Boolean(state.needs);
+}
