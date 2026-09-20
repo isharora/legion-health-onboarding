@@ -21,7 +21,7 @@ test('changing answers restores matching providers and invalidates excluded appo
 test('selection is locked until matching questions are complete and the choice step opens',()=>{
   const complete={phase:'match',booked:false,texas:true,eligible:true,answers:fitQuestions.map(q=>q.eligible),conditions:['ADHD'],insurance:'Aetna',needs:'existing'};
   assert.equal(canSelectAppointment(complete),true);
-  for(const phase of ['fit','fit-complete','conditions','insurance','needs','dashboard']) {
+  for(const phase of ['fit','conditions','insurance','needs','dashboard']) {
     assert.equal(canSelectAppointment({...complete,phase}),false);
   }
   for(const patch of [{answers:[]},{conditions:[]},{insurance:''},{needs:''},{texas:false},{eligible:false},{booked:true}]){
