@@ -46,7 +46,7 @@ function renderProviders() {
     'Virtual care, with appointments to fit your schedule.';
   pane.innerHTML=`${state.phase==='match'?progress()+backButton():'<button class="text-button mobile-close" data-action="return-flow">↑ Back to your questions</button>'}
     <div class="eyebrow">${booked?'Your upcoming care':choosing?'Your recommended care':'Care is within reach'}</div>
-    <div class="pane-heading"><h2 tabindex="-1">${booked?'Your appointment':choosing?'Choose your provider and time':'Providers ready to help'}</h2><span class="count">${show.length} ${show.length===1?'provider':'providers'}</span></div>
+    <div class="pane-heading"><h2 tabindex="-1">${booked?'Your appointment':choosing?'Choose your provider and time':'Mental health providers ready to help with availability as early as tomorrow.'}</h2><span class="count">${show.length} ${show.length===1?'provider':'providers'}</span></div>
     <p class="pane-description">${context}</p>
     ${!preview?`<div class="match-context"><span class="context-chip">⌖ Texas</span>${state.conditions.map(c=>`<span class="context-chip">${esc(c)}</span>`).join('')}${state.insurance?`<span class="context-chip ok">${esc(state.insurance==='No Insurance'?'Cash pay':state.insurance)}</span>`:''}</div>`:''}
     <p class="sr-only" role="status">${show.length} ${show.length===1?'provider available':'providers available'}</p>
