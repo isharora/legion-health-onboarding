@@ -30,11 +30,9 @@ test('selection is locked until matching questions are complete and the choice s
   assert.equal(new Set(providers.map(p=>p.id)).size,providers.length);
 });
 
-import {fitSequence,isAdult,coverageEstimate} from '../data.js';
+import {canLookupInsurance,isAdult,coverageEstimate} from '../data.js';
 test('lookup scenarios remove only resolved questions and distinguish coverage from cost certainty',()=>{
-  assert.deepEqual(fitSequence('manual'),[0,1,2,4]);
-  assert.deepEqual(fitSequence('found'),[1,2,4]);
-  assert.deepEqual(fitSequence('benefits-pending'),[1,2,4]);
+
   assert.match(coverageEstimate({coverage:'found',insurance:'Aetna'}).title,/25/);
   assert.match(coverageEstimate({coverage:'benefits-pending',insurance:'Aetna'}).title,/pending/);
   assert.match(coverageEstimate({coverage:'manual',insurance:'Aetna'}).title,/pending/);
@@ -46,4 +44,10 @@ test('age eligibility is derived from DOB at the eighteenth birthday',()=>{
   assert.equal(isAdult('2008-09-21',today),true);
   assert.equal(isAdult('2008-09-22',today),false);
   assert.equal(isAdult('not-a-date',today),false);
+});
+
+test('insurance lookup requires care preferences and all early eligibility checks',()=>{
+ const ready={texas:true,eligible:true,conditions:['ADHD'],needs:'existing',answers:[undefined,false,false,undefined,true]};
+ assert.equal(canLookupInsurance(ready),true);
+ for(const patch of [{texas:false},{eligible:false},{conditions:[]},{needs:''},{answers:[]},{answers:[undefined,true,false,undefined,true]},{answers:[undefined,false,true,undefined,true]},{answers:[undefined,false,false,undefined,false]}])assert.equal(canLookupInsurance({...ready,...patch}),false);
 });

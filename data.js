@@ -60,7 +60,7 @@ export function canSelectAppointment(state) {
 }
 
 // Deterministic local scenarios; no identity or insurance data leaves the browser.
-export function fitSequence(coverage){return coverage==='manual'?[0,1,2,4]:[1,2,4];}
+export function canLookupInsurance(state){return state.texas && state.eligible && state.conditions.length>0 && Boolean(state.needs) && [1,2,4].every(i=>state.answers[i]===fitQuestions[i].eligible);}
 export function isAdult(dob,today=new Date()){const date=new Date(dob+'T00:00:00');if(!Number.isFinite(date.getTime()))return false;const cutoff=new Date(today);cutoff.setFullYear(cutoff.getFullYear()-18);return date<=cutoff;}
 export function coverageEstimate(state){
  if(state.coverage==='found'&&state.insurance==='Aetna')return {title:'$25 estimated copay',description:'Your estimated share for this 60-minute initial visit is $25.',caveat:'Based on your current benefits and selected in-network provider. This is an estimate, not a guarantee; final responsibility is determined when insurance processes your claim.'};
