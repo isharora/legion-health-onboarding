@@ -1,4 +1,4 @@
-import {createIntakeState,mountIntake} from './intake.js';
+import {createIntakeState,mountIntake,applyIntakeScenario} from './intake.js';
 import { fitQuestions, conditionOptions, insurers, providers, getMatches, validSelection, canSelectAppointment, patientFeedback, canLookupInsurance, isAdult, coverageEstimate } from './data.js';
 
 let scenario={texas:true,verified:'found',records:''};
@@ -101,6 +101,7 @@ function providerCard(p,i,booked) {
   </article>`;
 }
 function render() {
+  flow.cleanupIntake?.();
   document.body.classList.toggle('post-booking',state.phase==='dashboard');
   flow.onclick=null;flow.oninput=null;flow.onsubmit=null;
   if(state.phase==='dashboard'){document.body.classList.remove('provider-fullscreen');mountIntake(flow,state.intake,{name:state.patient.first,patient:state.patient,appointment:appointmentSummary(),insurance:state.tasks.insurance?'Coverage details on file':'Verification still needed',reviewInsurance:()=>showTask('insurance')});return;}
@@ -236,6 +237,6 @@ function beginLookup(){
 
 function previewIntake(channel='web'){
   scenario.records=document.getElementById('scenario-records').value;
-  clearTimeout(lookupTimer);state.texas=true;state.eligible=true;state.conditions=['ADHD'];state.needs='existing';state.answers=fitQuestions.map(q=>q.eligible);state.insurance='Aetna';state.coverage='found';state.lookupStatus='found';state.tasks.insurance=true;state.locationConfirmed=true;state.booked=true;state.intake.tab=channel;state.intake.previewOnly=channel!=='web';state.intake.unread=channel==='text'?0:1;state.intake.recordStatus=scenario.records;state.intake.demoIndex=0;if(['found','ready'].includes(scenario.records)){state.intake.records='connected';state.intake.answers={issues:'I have been feeling anxious most days, especially at work. It is getting harder to focus and sleep.',medications:'Sertraline every morning. No other psychiatric medications currently.',pcp:'Dr. Maya Patel · Oakwood Family Care'};state.intake.prefilled={issues:'records',medications:'records',pcp:'records'};}selectRecommendation();go('dashboard');
+  clearTimeout(lookupTimer);state.texas=true;state.eligible=true;state.conditions=['ADHD'];state.needs='existing';state.answers=fitQuestions.map(q=>q.eligible);state.insurance='Aetna';state.coverage='found';state.lookupStatus='found';state.tasks.insurance=true;state.locationConfirmed=true;state.booked=true;state.intake.tab=channel;state.intake.previewOnly=channel!=='web';state.intake.unread=channel==='text'?0:1;state.intake.recordStatus=scenario.records;state.intake.demoIndex=0;applyIntakeScenario(state.intake,scenario.records);if(['found','ready'].includes(scenario.records))state.intake.records='connected';selectRecommendation();go('dashboard');
 }
 document.querySelectorAll('[data-scenario-intake]').forEach(button=>button.addEventListener('click',()=>previewIntake(button.dataset.scenarioIntake)));

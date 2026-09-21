@@ -70,3 +70,28 @@ test('background lookup permits choosing a provider but never bypasses booking e
  assert.equal(canSelectAppointment({...pending,lookupStatus:'idle'}),false);
  assert.equal(canSelectAppointment({...pending,answers:[]}),false);
 });
+
+import {applyIntakeScenario,saveIntakeEdit,canFinalizeIntake} from '../intake.js';
+test('records never invent a patient narrative or recent GAD answers',()=>{
+ const intake=createIntakeState();applyIntakeScenario(intake,'found');
+ assert.equal(intake.answers.issues,undefined);
+ assert.equal(intake.answers.gad1,undefined);
+ assert.equal(intake.prefilled.pcp,'records');
+ applyIntakeScenario(intake,'ready');
+ assert.equal(intake.prefilled.issues,'text');
+ assert.equal(intake.prefilled.gad1,'text');
+ assert.equal(intakeQuestions.filter(q=>q.group==='gad').length,7);
+ assert.equal(intakeQuestions.filter(q=>q.group==='gad'&&intake.answers[q.id]).length,3);
+});
+test('edits are saved explicitly and invalidate the signature without scenario overwrites',()=>{
+ const intake=createIntakeState();applyIntakeScenario(intake,'ready');
+ intake.signature={name:'Example Patient'};intake.editing.issues=true;intake.drafts.issues='Updated story';
+ assert.notEqual(intake.answers.issues,'Updated story');
+ saveIntakeEdit(intake,'issues');assert.equal(intake.answers.issues,'Updated story');assert.equal(intake.signature,null);
+ applyIntakeScenario(intake,'ready');assert.equal(intake.answers.issues,'Updated story');
+});
+test('finalization requires all seven GAD answers and no unsaved edits',()=>{
+ const intake=createIntakeState();applyIntakeScenario(intake,'ready');assert.equal(canFinalizeIntake(intake),false);
+ intakeQuestions.forEach(q=>{intake.answers[q.id]=q.type==='choice'?q.options[0]:'Example';});
+ assert.equal(canFinalizeIntake(intake),true);intake.editing.gad7=true;assert.equal(canFinalizeIntake(intake),false);
+});
