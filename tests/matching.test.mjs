@@ -31,6 +31,7 @@ test('selection is locked until matching questions are complete and the choice s
 });
 
 import {canLookupInsurance,isAdult,coverageEstimate} from '../data.js';
+import {intakeQuestions,createIntakeState,nextQuestion,normalizeReply} from '../intake.js';
 test('lookup scenarios remove only resolved questions and distinguish coverage from cost certainty',()=>{
 
   assert.match(coverageEstimate({coverage:'found',insurance:'Aetna'}).title,/25/);
@@ -50,6 +51,15 @@ test('insurance lookup requires care preferences and all early eligibility check
  const ready={texas:true,eligible:true,conditions:['ADHD'],needs:'existing',answers:[undefined,false,false,undefined,true]};
  assert.equal(canLookupInsurance(ready),true);
  for(const patch of [{texas:false},{eligible:false},{conditions:[]},{needs:''},{answers:[]},{answers:[undefined,true,false,undefined,true]},{answers:[undefined,false,true,undefined,true]},{answers:[undefined,false,false,undefined,false]}])assert.equal(canLookupInsurance({...ready,...patch}),false);
+});
+
+test('shared intake keeps web and SMS answers aligned',()=>{
+  const intake=createIntakeState();
+  assert.equal(nextQuestion(intake).id,'issues');
+  assert.equal(normalizeReply(intakeQuestions[1],'2'),'No');
+  assert.equal(normalizeReply(intakeQuestions[1],'maybe'),null);
+  intake.answers.issues='Trouble sleeping and persistent anxiety';
+  assert.equal(nextQuestion(intake).id,'hospitalized');
 });
 
 test('background lookup permits choosing a provider but never bypasses booking eligibility',()=>{

@@ -1,7 +1,8 @@
+import {createIntakeState,mountIntake} from './intake.js';
 import { fitQuestions, conditionOptions, insurers, providers, getMatches, validSelection, canSelectAppointment, patientFeedback, canLookupInsurance, isAdult, coverageEstimate } from './data.js';
 
 let scenario={texas:true,verified:'found'};
-const initial = () => ({phase:'conditions',coverage:'manual',lookupStatus:'idle',locationConfirmed:false,fit:0,answers:[],texas:scenario.texas,eligible:true,conditions:[],insurance:'',needs:'',providerId:'',slotId:'',patient:{first:'Ishita',last:'Testing',email:'ish.g.arora@gmail.com',phone:'(408) 440-6539',dob:'1992-12-21',referral:'Google, Bing, or other search engine'},checks:{terms:true,treatment:true,recording:true},tasks:{},booked:false});
+const initial = () => ({phase:'conditions',intake:createIntakeState(),coverage:'manual',lookupStatus:'idle',locationConfirmed:false,fit:0,answers:[],texas:scenario.texas,eligible:true,conditions:[],insurance:'',needs:'',providerId:'',slotId:'',patient:{first:'Ishita',last:'Testing',email:'ish.g.arora@gmail.com',phone:'(408) 440-6539',dob:'1992-12-21',referral:'Google, Bing, or other search engine'},checks:{terms:true,treatment:true,recording:true},tasks:{},booked:false});
 let state = initial();
 let lookupTimer;
 const flow = document.getElementById('flow');
@@ -100,6 +101,9 @@ function providerCard(p,i,booked) {
   </article>`;
 }
 function render() {
+  document.body.classList.toggle('post-booking',state.phase==='dashboard');
+  flow.onclick=null;flow.oninput=null;flow.onsubmit=null;
+  if(state.phase==='dashboard'){document.body.classList.remove('provider-fullscreen');mountIntake(flow,state.intake,{name:state.patient.first,appointment:appointmentSummary(),insurance:state.tasks.insurance?'Coverage details on file':'Verification still needed',reviewInsurance:()=>showTask('insurance')});return;}
   document.body.classList.toggle('provider-fullscreen', state.phase==='match');
   if(state.phase==='match'&&canSelectAppointment(state)&&!validSelection(state,state.providerId,state.slotId)) selectRecommendation();
   if(state.providerId&&!validSelection(state,state.providerId,state.slotId)){state.providerId='';state.slotId='';}
@@ -229,3 +233,5 @@ function beginLookup(){
  go('match');
  lookupTimer=setTimeout(()=>{if(state!==current)return;state.lookupStatus=state.coverage==='not-found'?'not-found':'found';const result=document.getElementById('coverage-result');if(result)result.innerHTML=patientCoverage();const save=document.getElementById('save-patient');if(save){save.disabled=false;save.textContent='Save my info & Continue';}},3000);
 }
+
+document.getElementById('preview-intake').addEventListener('click',()=>{clearTimeout(lookupTimer);state.texas=true;state.eligible=true;state.conditions=['ADHD'];state.needs='existing';state.answers=fitQuestions.map(q=>q.eligible);state.insurance='Aetna';state.coverage='found';state.lookupStatus='found';state.tasks.insurance=true;state.locationConfirmed=true;selectRecommendation();state.booked=true;go('dashboard');});
