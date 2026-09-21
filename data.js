@@ -58,3 +58,12 @@ export function canSelectAppointment(state) {
     fitQuestions.every((q,i)=>state.answers?.[i]===q.eligible) &&
     state.conditions.length>0 && Boolean(state.insurance) && Boolean(state.needs);
 }
+
+// Deterministic local scenarios; no identity or insurance data leaves the browser.
+export function fitSequence(coverage){return coverage==='manual'?[0,1,2,4]:[1,2,4];}
+export function isAdult(dob,today=new Date()){const date=new Date(dob+'T00:00:00');if(!Number.isFinite(date.getTime()))return false;const cutoff=new Date(today);cutoff.setFullYear(cutoff.getFullYear()-18);return date<=cutoff;}
+export function coverageEstimate(state){
+ if(state.coverage==='found'&&state.insurance==='Aetna')return {title:'$25 estimated copay',description:'Your estimated share for this 60-minute initial visit is $25.',caveat:'Based on your current benefits and selected in-network provider. This is an estimate, not a guarantee; final responsibility is determined when insurance processes your claim.'};
+ if(state.insurance==='No Insurance')return {title:'$250 initial visit',description:'Cash pay: $250 for your initial visit and $150 for follow-ups.',caveat:'You have selected care without insurance.'};
+ return {title:'Your cost estimate is pending',description:state.coverage==='benefits-pending'?'We found your insurance, but need to confirm the benefits for this visit.':'Verify your insurance after booking to receive a personalized estimate before your visit.',caveat:'Most insured patients pay $0–$40 per session, but this is not your personal estimate. Deductibles and coinsurance may apply. You are responsible for amounts not covered by insurance.'};
+}
