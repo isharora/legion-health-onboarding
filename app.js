@@ -235,6 +235,6 @@ function beginLookup(){
 }
 
 function previewIntake(channel='web'){
-  clearTimeout(lookupTimer);state.texas=true;state.eligible=true;state.conditions=['ADHD'];state.needs='existing';state.answers=fitQuestions.map(q=>q.eligible);state.insurance='Aetna';state.coverage='found';state.lookupStatus='found';state.tasks.insurance=true;state.locationConfirmed=true;state.booked=true;state.intake.tab=channel;state.intake.unread=channel==='text'?0:1;selectRecommendation();go('dashboard');
+  clearTimeout(lookupTimer);state.texas=true;state.eligible=true;state.conditions=['ADHD'];state.needs='existing';state.answers=fitQuestions.map(q=>q.eligible);state.insurance='Aetna';state.coverage='found';state.lookupStatus='found';state.tasks.insurance=true;state.locationConfirmed=true;state.booked=true;state.intake.tab=channel;state.intake.previewOnly=channel!=='web';state.intake.unread=channel==='text'?0:1;selectRecommendation();go('dashboard');
 }
 document.querySelectorAll('[data-scenario-intake]').forEach(button=>button.addEventListener('click',()=>previewIntake(button.dataset.scenarioIntake)));
