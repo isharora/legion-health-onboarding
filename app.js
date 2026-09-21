@@ -1,7 +1,7 @@
 import {createIntakeState,mountIntake} from './intake.js';
 import { fitQuestions, conditionOptions, insurers, providers, getMatches, validSelection, canSelectAppointment, patientFeedback, canLookupInsurance, isAdult, coverageEstimate } from './data.js';
 
-let scenario={texas:true,verified:'found',records:'checking'};
+let scenario={texas:true,verified:'found',records:''};
 const initial = () => ({phase:'conditions',intake:createIntakeState(),coverage:'manual',lookupStatus:'idle',locationConfirmed:false,fit:0,answers:[],texas:scenario.texas,eligible:true,conditions:[],insurance:'',needs:'',providerId:'',slotId:'',patient:{first:'Ishita',last:'Testing',email:'ish.g.arora@gmail.com',phone:'(408) 440-6539',dob:'1992-12-21',referral:'Google, Bing, or other search engine'},checks:{terms:true,treatment:true,recording:true},tasks:{},booked:false});
 let state = initial();
 let lookupTimer;
@@ -103,7 +103,7 @@ function providerCard(p,i,booked) {
 function render() {
   document.body.classList.toggle('post-booking',state.phase==='dashboard');
   flow.onclick=null;flow.oninput=null;flow.onsubmit=null;
-  if(state.phase==='dashboard'){document.body.classList.remove('provider-fullscreen');mountIntake(flow,state.intake,{name:state.patient.first,appointment:appointmentSummary(),insurance:state.tasks.insurance?'Coverage details on file':'Verification still needed',reviewInsurance:()=>showTask('insurance')});return;}
+  if(state.phase==='dashboard'){document.body.classList.remove('provider-fullscreen');mountIntake(flow,state.intake,{name:state.patient.first,patient:state.patient,appointment:appointmentSummary(),insurance:state.tasks.insurance?'Coverage details on file':'Verification still needed',reviewInsurance:()=>showTask('insurance')});return;}
   document.body.classList.toggle('provider-fullscreen', state.phase==='match');
   if(state.phase==='match'&&canSelectAppointment(state)&&!validSelection(state,state.providerId,state.slotId)) selectRecommendation();
   if(state.providerId&&!validSelection(state,state.providerId,state.slotId)){state.providerId='';state.slotId='';}
@@ -220,7 +220,7 @@ function identityScreen(){return progress()+locationBanner()+`<form id="identity
 function submitIdentity(lookup){if(!canLookupInsurance(state))return;const form=document.getElementById('identity-form');const consent=form.elements['lookup-consent'];consent.required=lookup;if(!form.reportValidity()){consent.required=true;return;}const fd=new FormData(form);for(const key of ['first','last','dob'])state.patient[key]=fd.get(key).trim();if(!isAdult(state.patient.dob)){state.fit=3;state.eligible=false;go('not-fit');return;}state.eligible=true;state.coverage=lookup?scenario.verified:'manual';state.insurance='';state.tasks.insurance=false;state.answers[3]=true;state.providerId='';state.slotId='';if(state.coverage==='manual')manualInsurance();else beginLookup();}
 function coverageCard(){return `<div class="coverage-card"><span class="context-chip ok">✓ Coverage found</span><h2>Aetna · Open Choice PPO</h2><p>${esc(state.patient.first)} ${esc(state.patient.last)} · Member ID •••• 4821</p><p>Active commercial coverage · No Medicare or Medicaid coverage returned</p><p class="fine-print">Tell us if you have additional coverage. We’re unable to serve patients with Medicaid or Medicare, even on a cash-pay basis.</p><p>${state.coverage==='found'?'Estimated initial-visit copay: <strong>$25</strong>':'Your plan was found. Your visit cost still needs confirmation.'}</p></div>`;}
 function costCard(){const cost=coverageEstimate(state);return `<div class="cost-card"><div class="eyebrow">Your initial appointment</div><h2>${cost.title}</h2><p>${cost.description}</p>${state.coverage!=='manual'?`<p>✓ Aetna · Active coverage<br>✓ ${esc(selectedProvider()?.name)} · In network</p>`:''}<p class="fine-print">${cost.caveat}</p><h3>Why we need your card</h3><p>There is no visit charge today. We keep a card on file for your share after insurance processes the claim and for any applicable cancellation fees. A $1 authorization may appear temporarily.</p></div>`;}
-document.addEventListener('change',e=>{if(e.target.id==='visit-location'){state.locationConfirmed=e.target.checked;}if(e.target.closest('#scenario-controls')){scenario={texas:document.getElementById('scenario-location').value==='texas',verified:document.getElementById('scenario-verified').value,records:document.getElementById('scenario-records').value};clearTimeout(lookupTimer);state=initial();if(dialog.open)dialog.close();go(state.phase);}});
+document.addEventListener('change',e=>{if(e.target.id==='visit-location'){state.locationConfirmed=e.target.checked;}if(e.target.closest('#scenario-controls')){scenario={texas:document.getElementById('scenario-location').value==='texas',verified:document.getElementById('scenario-verified').value,records:document.getElementById('scenario-records').value};clearTimeout(lookupTimer);if(dialog.open)dialog.close();if(e.target.id==='scenario-records'){state.intake=createIntakeState();previewIntake('web');return;}state=initial();go(state.phase);}});
 
 function patientCoverage(){
  if(state.lookupStatus==='idle')return '';
@@ -235,6 +235,7 @@ function beginLookup(){
 }
 
 function previewIntake(channel='web'){
+  scenario.records=document.getElementById('scenario-records').value;
   clearTimeout(lookupTimer);state.texas=true;state.eligible=true;state.conditions=['ADHD'];state.needs='existing';state.answers=fitQuestions.map(q=>q.eligible);state.insurance='Aetna';state.coverage='found';state.lookupStatus='found';state.tasks.insurance=true;state.locationConfirmed=true;state.booked=true;state.intake.tab=channel;state.intake.previewOnly=channel!=='web';state.intake.unread=channel==='text'?0:1;state.intake.recordStatus=scenario.records;state.intake.demoIndex=0;if(['found','ready'].includes(scenario.records)){state.intake.records='connected';state.intake.answers={issues:'I have been feeling anxious most days, especially at work. It is getting harder to focus and sleep.',medications:'Sertraline every morning. No other psychiatric medications currently.',pcp:'Dr. Maya Patel · Oakwood Family Care'};state.intake.prefilled={issues:'records',medications:'records',pcp:'records'};}selectRecommendation();go('dashboard');
 }
 document.querySelectorAll('[data-scenario-intake]').forEach(button=>button.addEventListener('click',()=>previewIntake(button.dataset.scenarioIntake)));
