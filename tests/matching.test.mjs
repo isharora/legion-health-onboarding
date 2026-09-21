@@ -56,7 +56,8 @@ test('insurance lookup requires care preferences and all early eligibility check
 test('shared intake keeps web and SMS answers aligned',()=>{
   const intake=createIntakeState();
   assert.equal(nextQuestion(intake).id,'issues');
-  assert.equal(normalizeReply(intakeQuestions[1],'2'),'No');
+  assert.equal(normalizeReply(intakeQuestions[1],'No'),'No');
+  assert.equal(normalizeReply(intakeQuestions[1],'2'),null);
   assert.equal(normalizeReply(intakeQuestions[1],'maybe'),null);
   intake.answers.issues='Trouble sleeping and persistent anxiety';
   assert.equal(nextQuestion(intake).id,'hospitalized');

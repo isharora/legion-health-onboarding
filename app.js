@@ -234,4 +234,7 @@ function beginLookup(){
  lookupTimer=setTimeout(()=>{if(state!==current)return;state.lookupStatus=state.coverage==='not-found'?'not-found':'found';const result=document.getElementById('coverage-result');if(result)result.innerHTML=patientCoverage();const save=document.getElementById('save-patient');if(save){save.disabled=false;save.textContent='Save my info & Continue';}},3000);
 }
 
-document.getElementById('preview-intake').addEventListener('click',()=>{clearTimeout(lookupTimer);state.texas=true;state.eligible=true;state.conditions=['ADHD'];state.needs='existing';state.answers=fitQuestions.map(q=>q.eligible);state.insurance='Aetna';state.coverage='found';state.lookupStatus='found';state.tasks.insurance=true;state.locationConfirmed=true;selectRecommendation();state.booked=true;go('dashboard');});
+function previewIntake(channel='web'){
+  clearTimeout(lookupTimer);state.texas=true;state.eligible=true;state.conditions=['ADHD'];state.needs='existing';state.answers=fitQuestions.map(q=>q.eligible);state.insurance='Aetna';state.coverage='found';state.lookupStatus='found';state.tasks.insurance=true;state.locationConfirmed=true;state.booked=true;state.intake.tab=channel;state.intake.unread=channel==='text'?0:1;selectRecommendation();go('dashboard');
+}
+document.querySelectorAll('[data-scenario-intake]').forEach(button=>button.addEventListener('click',()=>previewIntake(button.dataset.scenarioIntake)));
