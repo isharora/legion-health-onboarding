@@ -51,3 +51,11 @@ test('insurance lookup requires care preferences and all early eligibility check
  assert.equal(canLookupInsurance(ready),true);
  for(const patch of [{texas:false},{eligible:false},{conditions:[]},{needs:''},{answers:[]},{answers:[undefined,true,false,undefined,true]},{answers:[undefined,false,true,undefined,true]},{answers:[undefined,false,false,undefined,false]}])assert.equal(canLookupInsurance({...ready,...patch}),false);
 });
+
+test('background lookup permits choosing a provider but never bypasses booking eligibility',()=>{
+ const pending={phase:'match',booked:false,texas:true,eligible:true,answers:[undefined,false,false,true,true],conditions:['ADHD'],insurance:'',needs:'existing',lookupStatus:'pending'};
+ assert.equal(canSelectAppointment(pending),true);
+ assert.equal(canSelectAppointment({...pending,phase:'payment'}),false);
+ assert.equal(canSelectAppointment({...pending,lookupStatus:'idle'}),false);
+ assert.equal(canSelectAppointment({...pending,answers:[]}),false);
+});

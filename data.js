@@ -55,8 +55,8 @@ export function validSelection(state, providerId, slotId) { return getMatches(st
 
 export function canSelectAppointment(state) {
   return ['match','patient','payment'].includes(state.phase) && !state.booked && state.texas && state.eligible &&
-    fitQuestions.every((q,i)=>state.answers?.[i]===q.eligible) &&
-    state.conditions.length>0 && Boolean(state.insurance) && Boolean(state.needs);
+    fitQuestions.every((q,i)=>(i===0 && state.phase==='match' && ['pending','found','not-found'].includes(state.lookupStatus)) || state.answers?.[i]===q.eligible) &&
+    state.conditions.length>0 && (Boolean(state.insurance) || (state.phase==='match' && ['pending','found','not-found'].includes(state.lookupStatus))) && Boolean(state.needs);
 }
 
 // Deterministic local scenarios; no identity or insurance data leaves the browser.

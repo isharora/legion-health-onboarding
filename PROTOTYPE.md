@@ -12,3 +12,5 @@ Care concerns, care needs, location when not detected, crisis risk, hospitalizat
 All lookup responses, coverage, network decisions, and prices are deterministic fixtures. No Verified, payer, payment, or booking API is called. Consent text is illustrative and must be replaced with Verified-approved production consent and branding before integration. The found fixture assumes successful plan classification and complete discovery of coverage; production must handle secondary insurance and indeterminate eligibility explicitly. A mailing address does not establish physical visit location.
 
 Run checks: `node --test tests/*.test.mjs`.
+
+Insurance lookup runs as a three-second background simulation while the user chooses a provider. Results appear in personal details. The initial provider list is not insurance-confirmed; if the chosen provider does not accept the discovered plan, confirming details routes to compatible providers for explicit reselection. No match offers manual entry. Scenario changes cancel pending responses.
