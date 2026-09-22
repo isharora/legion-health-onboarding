@@ -100,7 +100,24 @@ function providerCard(p,i,booked) {
     <details class="provider-details"><summary>About ${p.name.split(' ')[0]}</summary><p>${p.bio}</p><p>Areas of expertise: ${p.specialties.join(', ')}</p></details>
   </article>`;
 }
+let actionDockObserver;
+function pinOnboardingActions(){
+  const selector={conditions:'[data-action="continue"]',insurance:'[data-action="continue"]',needs:'[data-action="continue"]',identity:'#identity-form > .primary',patient:'#save-patient',payment:'.inline-actions:has([data-action="book"])',fit:'.question-card .answers','location-check':'.question-card .answers',match:'.selection-confirm'}[state.phase];
+  if(!selector)return;
+  const action=(state.phase==='match'?pane:flow).querySelector(selector);
+  if(!action)return;
+  const form=action.closest('form');
+  if(form)action.setAttribute('form',form.id);
+  const dock=document.createElement('div');dock.id='onboarding-actions';dock.className='onboarding-actions'+(state.phase==='match'?' full-width':'');
+  dock.setAttribute('role','region');dock.setAttribute('aria-label','Onboarding actions');
+  dock.append(action);
+  if(state.phase==='identity'){const manual=flow.querySelector('[data-action="skip-lookup"]');if(manual)dock.append(manual);}
+  document.body.append(dock);document.body.classList.add('has-action-dock');
+  actionDockObserver=new ResizeObserver(()=>document.body.style.setProperty('--action-dock-height',dock.offsetHeight+'px'));
+  actionDockObserver.observe(dock);
+}
 function render() {
+  actionDockObserver?.disconnect();document.getElementById('onboarding-actions')?.remove();document.body.classList.remove('has-action-dock');
   flow.cleanupIntake?.();
   document.body.classList.toggle('post-booking',state.phase==='dashboard');
   flow.onclick=null;flow.oninput=null;flow.onsubmit=null;
@@ -138,6 +155,7 @@ function render() {
     html=`<div class="dashboard"><div class="dashboard-title"><h1 tabindex="-1">Hey ${esc(state.patient.first||'there')}! <span style="font-weight:400;font-size:18px;color:#758092">Here's your care summary.</span></h1></div><div class="notice">ⓘ &nbsp; Action needed: Must be completed 24 hours before your appointment</div><div class="form-card"><h2 style="font-size:21px">New Patient Checklist</h2>${[['insurance','Insurance',state.coverage!=='manual'?'Coverage confirmed · '+(state.coverage==='found'?'$25 estimated initial visit':'Cost estimate pending'):'Verify insurance or choose cash-pay'],['history','Medical History','Tell us about your medical history'],['assessment','Pre-Appointment Check-in','Do a pre-appointment check-in']].map(([id,title,body])=>`<div class="dashboard-item"><div><h3>${title}</h3><span class="badge ${state.tasks[id]?'complete':''}">${state.tasks[id]?'Complete':'Incomplete'}</span><p>${body}</p></div><button class="primary" data-action="task" data-value="${id}">${state.tasks[id]?'Review':'Start'}</button></div>`).join('')}</div><div class="form-card"><h2 style="font-size:21px">Next Appointment</h2>${appointmentSummary()}<div class="inline-actions"><button class="secondary" data-action="change-appointment">Reschedule</button><button class="secondary" data-action="cancel-appointment">Cancel</button></div></div><div class="form-card"><h2 style="font-size:21px">Post-Visit Summaries</h2><p class="hint" style="margin-top:20px;text-align:center">No post-visit summaries available at this time.</p></div>${state.conditions.includes('ADHD')?`<div class="form-card"><h2 style="font-size:21px">⚡ Accelerate your ADHD treatment</h2><p class="hint" style="margin-top:10px">To accelerate your treatment, your provider needs the following information. Please complete it as soon as possible ⏱</p>${['ADHD Health History','ADHD Diagnosis History (If Available)','Your Most Recent Vital Signs'].map(t=>`<div class="dashboard-item"><div><h3>${t}</h3><span class="badge">Not Started</span></div><button class="primary" data-action="intake-detail" data-value="${t}">Start</button></div>`).join('')}</div>`:''}<p class="fine-print">Demo booking only. No appointment, patient account or medical record has been created.</p></div>`;
   }
   flow.innerHTML=`<div class="step-enter">${html}</div>`;
+  pinOnboardingActions();
 }
 
 function appointmentSummary(){const p=selectedProvider(),s=selectedSlot();if(!p||!s)return '';return `<div class="selected-summary"><strong>${s.date}</strong><div class="time">${s.time} CT</div><p>60 minute session</p><hr style="border:0;border-top:1px solid #d8e3f7;margin:14px 0"><strong>${p.name}</strong><p>Psychiatric Mental Health Nurse Practitioner</p></div>`;}
