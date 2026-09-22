@@ -71,7 +71,7 @@ test('background lookup permits choosing a provider but never bypasses booking e
  assert.equal(canSelectAppointment({...pending,answers:[]}),false);
 });
 
-import {applyIntakeScenario,saveIntakeEdit,canFinalizeIntake} from '../intake.js';
+import {applyIntakeScenario,saveIntakeEdit,canFinalizeIntake,isIntakeComplete} from '../intake.js';
 test('records never invent a patient narrative or recent GAD answers',()=>{
  const intake=createIntakeState();applyIntakeScenario(intake,'found');
  assert.equal(intake.answers.issues,undefined);
@@ -93,5 +93,19 @@ test('edits are saved explicitly and invalidate the signature without scenario o
 test('finalization requires all seven GAD answers and no unsaved edits',()=>{
  const intake=createIntakeState();applyIntakeScenario(intake,'ready');assert.equal(canFinalizeIntake(intake),false);
  intakeQuestions.forEach(q=>{intake.answers[q.id]=q.type==='choice'?q.options[0]:'Example';});
- assert.equal(canFinalizeIntake(intake),true);intake.editing.gad7=true;assert.equal(canFinalizeIntake(intake),false);
+ assert.equal(canFinalizeIntake(intake),false);intake.uploads.id={name:'example.png'};assert.equal(canFinalizeIntake(intake),true);intake.editing.gad7=true;assert.equal(canFinalizeIntake(intake),false);
+});
+
+test('intake completion requires ID, every saved answer and signature, and reopens after edits',()=>{
+ const intake=createIntakeState();
+ intakeQuestions.forEach(q=>{intake.answers[q.id]=q.type==='choice'?q.options[0]:'Example';});
+ intake.signature={name:'Example Patient'};
+ assert.equal(isIntakeComplete(intake),false);
+ intake.uploads.id={name:'example.png'};
+ assert.equal(isIntakeComplete(intake),true);
+ intake.editing.issues=true;intake.drafts.issues='Changed';
+ assert.equal(isIntakeComplete(intake),false);
+ saveIntakeEdit(intake,'issues');assert.equal(isIntakeComplete(intake),false);
+ intake.signature={name:'Example Patient'};assert.equal(isIntakeComplete(intake),true);
+ delete intake.uploads.id;assert.equal(isIntakeComplete(intake),false);
 });
