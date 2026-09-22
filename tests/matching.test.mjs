@@ -121,3 +121,13 @@ test('found records populate demo documents without granting optional permission
  }
  for(const status of ['','checking','still']){const intake=createIntakeState();applyIntakeScenario(intake,status);assert.deepEqual(intake.uploads,{});}
 });
+
+import {intakeTimeLeft} from '../intake.js';
+test('intake countdown respects the 24-hour deadline and never shows negative time',()=>{
+ const now=Date.parse('2026-09-21T12:00:00-05:00');
+ assert.equal(intakeTimeLeft('2026-09-24T16:00:00-05:00',now),'2d 4h left');
+ assert.equal(intakeTimeLeft('2026-09-22T12:30:00-05:00',now),'Less than 1 hour left');
+ assert.equal(intakeTimeLeft('2026-09-22T11:00:00-05:00',now),'Due now');
+ assert.equal(intakeTimeLeft('2026-09-20T12:00:00-05:00',now),'Appointment time reached');
+ assert.equal(intakeTimeLeft(undefined,now),'');
+});

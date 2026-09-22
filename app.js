@@ -104,7 +104,7 @@ function render() {
   flow.cleanupIntake?.();
   document.body.classList.toggle('post-booking',state.phase==='dashboard');
   flow.onclick=null;flow.oninput=null;flow.onsubmit=null;
-  if(state.phase==='dashboard'){document.body.classList.remove('provider-fullscreen');mountIntake(flow,state.intake,{name:state.patient.first,patient:state.patient,appointment:appointmentSummary(),insuranceComplete:!!state.tasks.insurance,insurance:state.tasks.insurance?'Coverage details on file':'Verification still needed',reviewInsurance:()=>showTask('insurance')});return;}
+  if(state.phase==='dashboard'){document.body.classList.remove('provider-fullscreen');mountIntake(flow,state.intake,{name:state.patient.first,patient:state.patient,appointment:appointmentSummary(),appointmentAt:selectedSlot()?.iso ? selectedSlot().iso+'-05:00' : null,insuranceComplete:!!state.tasks.insurance,insurance:state.tasks.insurance?'Coverage details on file':'Verification still needed',reviewInsurance:()=>showTask('insurance')});return;}
   document.body.classList.toggle('provider-fullscreen', state.phase==='match');
   if(state.phase==='match'&&canSelectAppointment(state)&&!validSelection(state,state.providerId,state.slotId)) selectRecommendation();
   if(state.providerId&&!validSelection(state,state.providerId,state.slotId)){state.providerId='';state.slotId='';}
