@@ -2,7 +2,7 @@ import {createIntakeState,mountIntake,applyIntakeScenario} from './intake.js';
 import { fitQuestions, conditionOptions, insurers, providers, getMatches, validSelection, canSelectAppointment, patientFeedback, canLookupInsurance, isAdult, coverageEstimate } from './data.js';
 
 let scenario={texas:true,verified:'found',records:''};
-const initial = () => ({phase:'conditions',intake:createIntakeState(),coverage:'manual',lookupStatus:'idle',locationConfirmed:false,fit:0,answers:[],texas:scenario.texas,eligible:true,conditions:['Anxiety'],insurance:'',needs:'',providerId:'',slotId:'',patient:{first:'Ishita',last:'Testing',email:'ish.g.arora@gmail.com',phone:'(408) 440-6539',dob:'1992-12-21',referral:'Google, Bing, or other search engine'},checks:{terms:true,treatment:true,recording:true},tasks:{},booked:false});
+const initial = () => ({phase:'conditions',intake:createIntakeState(),coverage:'manual',lookupStatus:'idle',locationConfirmed:false,fit:0,answers:[],texas:scenario.texas,eligible:true,conditions:['Anxiety'],otherDescription:'',insurance:'',needs:'',providerId:'',slotId:'',patient:{first:'Ishita',last:'Testing',email:'ish.g.arora@gmail.com',phone:'(408) 440-6539',dob:'1992-12-21',referral:'Google, Bing, or other search engine'},checks:{terms:true,treatment:true,recording:true},tasks:{},booked:false});
 let state = initial();
 let lookupTimer;
 const flow = document.getElementById('flow');
@@ -14,6 +14,26 @@ const privacy = `<p class="confidential">Your responses help us ensure you recei
 const steps = ['Your care','Choose appointment','Your details','Confirm booking'];
 const selectedProvider = () => providers.find(p=>p.id===state.providerId);
 const selectedSlot = () => selectedProvider()?.slots.find(s=>s.id===state.slotId);
+
+// Branch-specific referrals observed in Legion's live eligibility flow.
+function fitResources(){
+  const samhsa='<li><strong>SAMHSA National Helpline:</strong> <a href="tel:18006624357">1-800-662-4357</a></li>';
+  const crisis='<li><strong>988 Suicide &amp; Crisis Lifeline:</strong> Call or text <a href="tel:988">988</a>.</li>';
+  const textLine='<li><strong>Crisis Text Line:</strong> Text HOME to 741741.</li>';
+  const insurer='<li>Contact your insurance provider using the number on your insurance card for covered care options.</li>';
+  const primary='<li>Ask your primary care provider for referrals to appropriate care.</li>';
+  const directory='<li>Find local providers through <a href="https://www.psychologytoday.com/us/therapists" target="_blank" rel="noreferrer">Psychology Today</a>.</li>';
+  const treatment='<li>Explore treatment options at <a href="https://findtreatment.gov/" target="_blank" rel="noreferrer">FindTreatment.gov</a>.</li>';
+  const options={
+    texas:samhsa+treatment+directory+crisis,
+    0:'<li>Find providers who accept your coverage at <a href="https://www.medicaid.gov/" target="_blank" rel="noreferrer">Medicaid.gov</a> or <a href="https://www.medicare.gov/find-a-doctor" target="_blank" rel="noreferrer">Medicare.gov</a>.</li>'+samhsa+crisis,
+    1:crisis+textLine+'<li>If there is an immediate emergency, call <a href="tel:911">911</a>.</li>'+samhsa,
+    2:samhsa+'<li>Search for intensive treatment programs at <a href="https://findtreatment.gov/" target="_blank" rel="noreferrer">FindTreatment.gov</a>.</li>'+insurer+primary,
+    3:'<li><strong>Teen Line:</strong> Call <a href="tel:18008528336">1-800-852-8336</a> or text TEEN to 839863 (evenings PST).</li>'+textLine+'<li>Ask your pediatrician for age-appropriate mental health referrals.</li>'+samhsa,
+    4:directory+insurer+primary+samhsa
+  };
+  return `<div class="fit-resources"><h3>${state.texas&&state.fit===1?'Immediate support':'Alternative care resources'}</h3><ul>${options[state.texas?state.fit:'texas']}</ul></div>`;
+}
 
 function openDialog(title,body) { document.getElementById('dialog-title').textContent=title; document.getElementById('dialog-body').innerHTML=body; dialog.showModal(); }
 function progress() {
@@ -136,10 +156,9 @@ function render() {
     html=`${progress()}${locationBanner()}<div class="intro"><h1 tabindex="-1">Let's Make Sure We're the Right Fit</h1><p>We want to ensure that you get the best possible care for your current situation. Please read the following carefully and only proceed if you are a good fit for the care we provide.</p></div><div class="question-card"><h2>${q.title}</h2><p>${q.body}</p><div class="answers"><button class="answer" data-action="fit-answer" data-value="yes">Yes</button><button class="answer" data-action="fit-answer" data-value="no">No</button></div></div>${backButton()}${safety}${privacy}`;
   } else if(state.phase==='not-fit'){
     const q=fitQuestions[state.fit];
-    const crisis=state.texas&&state.fit===1;
-    html=`<div class="intro"><h1 tabindex="-1">Your Safety &amp; Care Come First</h1></div><div class="question-card"><h2>${!state.texas?'Are you based in Texas?':q.title}</h2><p>${!state.texas?"We're thrilled to support Texans right now. If you'd prefer care in another state, select 'No' and we'll point you to resources that can help you.":q.body}</p>${crisis?'<a class="fit-resource" href="tel:988"><strong>Call 988 for immediate crisis support</strong></a><p>If there is an immediate emergency, call 911.</p>':'<p>We want to help you find care better suited to your current needs.</p><button class="secondary" style="margin-top:18px" data-action="resources">View care resources</button>'}</div>${safety}<button class="back" data-action="correct-fit">← Change my answer</button>`;
+    html=`<div class="intro"><h1 tabindex="-1">We Want to Help You Get the Right Care</h1></div><div class="question-card"><h2>${!state.texas?'Are you based in Texas?':q.title}</h2><p>${!state.texas?"We're thrilled to support Texans right now. If you'd prefer care in another state, select 'No' and we'll point you to resources that can help you.":q.body}</p>${fitResources()}</div>${safety}<button class="back" data-action="correct-fit">← Change my answer</button>`;
   } else if(state.phase==='conditions'){
-    html=`${progress()}<div class="form-card">${heading('What brings you here?','Understanding your needs helps us match you with the right care team')}<p class="hint">Select all that apply</p><div class="condition-grid">${conditionOptions.map(([name,icon,copy])=>{const on=state.conditions.includes(name);return `<button class="condition ${on?'selected':''} " data-action="condition" data-value="${esc(name)}" aria-pressed="${on}"><span class="condition-name"><span class="condition-icon" aria-hidden="true">${icon}</span>${esc(name)}</span>${on&&copy?`<span class="condition-copy">${copy}</span>`:''}<span class="condition-check" aria-hidden="true">${on?'✓':''}</span></button>`;}).join('')}</div><button class="primary" data-action="continue" ${state.conditions.length?'':'disabled'}>Continue</button></div>`;
+    html=`${progress()}<div class="form-card">${heading('What brings you here?','Understanding your needs helps us match you with the right care team')}<p class="hint">Select all that apply</p><div class="condition-grid">${conditionOptions.map(([name,icon,copy])=>{const on=state.conditions.includes(name);return `<button class="condition ${on?'selected':''} " data-action="condition" data-value="${esc(name)}" aria-pressed="${on}"><span class="condition-name"><span class="condition-icon" aria-hidden="true">${icon}</span>${esc(name)}</span>${on&&copy?`<span class="condition-copy">${copy}</span>`:''}<span class="condition-check" aria-hidden="true">${on?'✓':''}</span></button>`;}).join('')}</div>${state.conditions.includes('Other')?`<div class="field other-concern"><label for="other-description">Please describe what you're looking for help with:</label><textarea id="other-description" rows="3" required>${esc(state.otherDescription)}</textarea></div>`:''}<button class="primary" data-action="continue" ${state.conditions.length?'':'disabled'}>Continue</button></div>`;
   } else if(state.phase==='insurance'){
     html=`${progress()}<div class="form-card">${heading("Great news! We've got you covered",'We accept most major insurance plans. Select yours below.')}<h3 style="font-size:16px;margin-bottom:18px">Select your insurance provider</h3><div class="insurer-grid">${insurers.map((name,i)=>`<button class="insurer ${state.insurance===name?'selected':''}" data-action="insurance" data-value="${name}" aria-pressed="${state.insurance===name}"><span class="insurer-name ${['aetna','bluecross','cigna','united','oscar'][i]||''}">${['aetna','BlueCross<br>BlueShield','cigna','United<br>Healthcare','oscar','Other','None'][i]}</span><small>${name}</small></button>`).join('')}</div><button class="primary" data-action="continue" ${state.insurance?'':'disabled'}>Continue</button></div>${backButton()}`;
   } else if(state.phase==='needs'){
@@ -162,7 +181,7 @@ function appointmentSummary(){const p=selectedProvider(),s=selectedSlot();if(!p|
 function startFit(){state.fit=1;go('fit');}
 function manualInsurance(){clearTimeout(lookupTimer);state.lookupStatus='idle';state.coverage='manual';state.insurance='';state.tasks.insurance=false;state.answers[0]=undefined;state.fit=0;go('fit');}
 function continueFlow(){
- if(state.phase==='conditions'){if(state.conditions.length)go('needs');return;}
+ if(state.phase==='conditions'){const other=document.getElementById('other-description');if(other&&!other.reportValidity())return;if(state.conditions.length)go('needs');return;}
  if(state.phase==='needs'){if(!state.needs)return;if(!state.texas)go('location-check');else startFit();return;}
  if(state.phase==='insurance'){if(state.insurance)go('match');return;}
  if(state.phase==='match'&&canSelectAppointment(state))go('patient');
@@ -226,7 +245,7 @@ function showTask(task){
  if(task==='assessment')openDialog('Pre-Appointment Check-In',`<p>Complete these mental health screening forms before your appointment</p><p class="fine-print">GAD-7 Anxiety Assessment · PHQ-9 Depression Assessment · Adult ADHD Self-Report Scale (ASRS-v1.1)</p><p class="hint">0 of 3 forms completed</p><hr><h3>GAD-7 Anxiety Assessment</h3><p class="fine-print">Section 1 of 2</p><p>Snapshot of anxiety symptoms that refines your care plan.</p><h3 style="margin-top:20px">Anxiety Symptoms</h3><p>Please answer all questions based on your experience over the last 2 weeks.</p><p class="hint">Question 1 of 7</p><p style="color:#1c2a3c">1. Feeling nervous, anxious, or on edge</p><div class="assess-options">${['Not at all','Several days','Over half the days','Nearly every day'].map(t=>`<button class="answer" data-action="assessment-answer" aria-pressed="false">${t}</button>`).join('')}</div><div class="inline-actions"><button class="secondary" data-action="dismiss">Skip This Form</button><button class="primary" id="assessment-next" data-action="assessment-next" disabled>Next</button></div>`);
 }
 
-document.addEventListener('input',e=>{if(e.target.form?.id==='patient-form'){const {name,value,checked,type}=e.target;if(type==='checkbox')state.checks[name]=checked;else state.patient[name]=value;}});
+document.addEventListener('input',e=>{if(e.target.id==='other-description')state.otherDescription=e.target.value;if(e.target.form?.id==='patient-form'){const {name,value,checked,type}=e.target;if(type==='checkbox')state.checks[name]=checked;else state.patient[name]=value;}});
 document.addEventListener('change',e=>{if(e.target.form?.id==='patient-form'){const {name,value,checked,type}=e.target;if(type==='checkbox')state.checks[name]=checked;else state.patient[name]=value;}});
 document.addEventListener('submit',e=>{if(e.target.id==='identity-form'){e.preventDefault();submitIdentity(true);return;}if(e.target.id==='patient-form'){e.preventDefault();const fd=new FormData(e.target);state.patient={...state.patient,...Object.fromEntries(['email','phone','referral'].map(k=>[k,fd.get(k)]))};state.checks=Object.fromEntries(['terms','treatment','recording'].map(k=>[k,fd.has(k)]));state.locationConfirmed=fd.has('visit-location');if(!state.locationConfirmed)return;if(state.lookupStatus==='pending')return;if(state.lookupStatus==='not-found'){manualInsurance();return;}if(state.lookupStatus==='found'&&!state.tasks.insurance){state.insurance='Aetna';state.answers[0]=false;state.tasks.insurance=true;if(!validSelection(state,state.providerId,state.slotId)){go('match');pane.insertAdjacentHTML('afterbegin','<div class="notice" role="status">Your previous provider does not accept your Aetna plan. Please confirm an in-network provider below.</div>');return;}}go('payment');}if(e.target.id==='insurance-form'){e.preventDefault();openDialog('Insurance verification','<p>This demo does not connect to an insurer. No coverage has been verified.</p><button class="primary modal-footer" data-action="dismiss">Back to care summary</button>');}});
 document.getElementById('restart').addEventListener('click',()=>openDialog('Start over?','<p>This will clear your answers and demo appointment in this tab.</p><div class="inline-actions"><button class="secondary" data-action="dismiss">Keep my progress</button><button class="primary" id="confirm-restart">Start over</button></div>'));

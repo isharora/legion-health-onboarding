@@ -9,7 +9,10 @@ export const conditionOptions = [
   ['ADHD','◎','💊 We prescribe ADHD medications including adderall, with stringent clinical standards<br>✅ We offer free, FDA-approved online ADHD testing (QbCheck®)'],
   ['Depression','☁',"🤝 You're not alone, we've helped thousands of patients get relief"],
   ['Anxiety','!','💊 We do not prescribe benzodiazepines over 1mg a day'],
-  ['Bipolar Disorder','ϟ',''],['PTSD','◇',''],["I'm not sure",'?',''],['Other','•••','']
+  ['Bipolar Disorder','ϟ',"🤝 You're not alone, we've helped thousands of patients get relief"],
+  ['PTSD','◇',"🤝 You're not alone, we've helped thousands of patients get relief"],
+  ["I'm not sure",'?','🤗 Our team of providers will help you understand your mental health and determine if treatment is needed'],
+  ['Other','•••','We support a wide range of mental health concerns beyond those listed']
 ];
 export const insurers = ['Aetna','Blue Cross Blue Shield','Cigna','United Healthcare','Oscar Health','Other Insurance','No Insurance'];
 // Patient feedback transcribed from the supplied onboarding screenshots.
