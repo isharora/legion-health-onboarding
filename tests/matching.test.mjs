@@ -93,7 +93,7 @@ test('edits are saved explicitly and invalidate the signature without scenario o
 test('finalization requires all seven GAD answers and no unsaved edits',()=>{
  const intake=createIntakeState();applyIntakeScenario(intake,'ready');assert.equal(canFinalizeIntake(intake),false);
  intakeQuestions.forEach(q=>{intake.answers[q.id]=q.type==='choice'?q.options[0]:'Example';});
- assert.equal(canFinalizeIntake(intake),false);intake.uploads.id={name:'example.png'};assert.equal(canFinalizeIntake(intake),true);intake.editing.gad7=true;assert.equal(canFinalizeIntake(intake),false);
+ assert.equal(canFinalizeIntake(intake),true);intake.editing.gad7=true;assert.equal(canFinalizeIntake(intake),false);
 });
 
 test('intake completion requires ID, every saved answer and signature, and reopens after edits',()=>{
@@ -108,4 +108,16 @@ test('intake completion requires ID, every saved answer and signature, and reope
  saveIntakeEdit(intake,'issues');assert.equal(isIntakeComplete(intake),false);
  intake.signature={name:'Example Patient'};assert.equal(isIntakeComplete(intake),true);
  delete intake.uploads.id;assert.equal(isIntakeComplete(intake),false);
+});
+
+test('found records populate demo documents without granting optional permission',()=>{
+ for(const status of ['found','ready']){
+ const intake=createIntakeState();applyIntakeScenario(intake,status);
+ assert.equal(intake.uploads.diagnosis.source,'From connected records');
+ assert.equal(intake.uploads.treatment.source,'From connected records');
+ assert.equal(intake.uploads.id.source,'On file');
+ assert.equal(intake.release,false);
+ delete intake.uploads.diagnosis;applyIntakeScenario(intake,status);assert.equal(intake.uploads.diagnosis,undefined);
+ }
+ for(const status of ['','checking','still']){const intake=createIntakeState();applyIntakeScenario(intake,status);assert.deepEqual(intake.uploads,{});}
 });
